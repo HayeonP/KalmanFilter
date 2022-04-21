@@ -23,11 +23,14 @@ def kalman_filter(data):
     return outputs
 
 def main():
-    bag = rosbag.Bag('files/220203_FMTC_ndt_pose_with_gps_data_red_course.bag')
+    bag = rosbag.Bag('../files/220203_FMTC_ndt_pose_with_gps_data_red_course.bag')
+
+    ndt_noise_flag = False # Add noise to ndt pose data
+    filter_observation_noise_flag = False # When noise is exist, use prediction value for observation
 
     pose_list = []
     time_list = []
-    noise_flag = True
+    noise_occurence = []
 
     for topic, msg, t in bag.read_messages(topics=['/ndt_pose']):
         pose_list.append([msg.pose.position.x, msg.pose.position.y, msg.pose.position.z, msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w])
@@ -53,21 +56,22 @@ def main():
         acc_y_list.append(acc_y)
 
     cnt = 0
-    if noise_flag:
-        for i in range(len(pose_list)):
-            x = pose_list[i][0]
-            y = pose_list[i][1]
+    for i in range(len(pose_list)):
+        x = pose_list[i][0]
+        y = pose_list[i][1]
 
-            if(random.randrange(1,50) == 1):
-                noise = np.random.normal(0, 15, 2)
-                x = x + noise[0]
-                y = y + noise[1]
-                pose_list[i][0] = x
-                pose_list[i][1] = y
-                cnt = cnt + 1
+        noise_occurence.append(0)
 
-    print('cnt:',cnt)
+        if(ndt_noise_flag and np.random.randrange(1,200) == 1):
+            noise = np.random.normal(0, 15, 2)
+            x = x + noise[0]
+            y = y + noise[1]
+            pose_list[i][0] = x
+            pose_list[i][1] = y
+            noise_occurence[i] = 1
+                
 
+    
     # Align index of data structures
     pose_x_list = [pose[0] for pose in pose_list]
     pose_x_list = pose_x_list[2:]
@@ -75,8 +79,8 @@ def main():
     pose_y_list = pose_y_list[2:]
     vel_x_list = vel_x_list[1:]
     vel_y_list = vel_y_list[1:]
-
     time_list = time_list[2:]
+    noise_occurence = noise_occurence[2:]
 
     # initialization
     pose_x = pose_x_list[0]
@@ -101,7 +105,7 @@ def main():
                     [0,      0,      0,      Q_I]])
     
     # Observation Noise
-    R_I = 50
+    R_I = 1
     R_k = np.array([[R_I,      0,      0,      0],
                     [0,      R_I,      0,      0],
                     [0,      0,      R_I,      0],
@@ -112,8 +116,8 @@ def main():
     output_pose_y_list = []
 
     for i in range(1, len(pose_x_list)):
-        x_hat_k_1 = copy.deepcopy(x_hat_prime_k)
-        P_k_1 = copy.deepcopy(P_prime_k)
+        x_hat_k_prev = copy.deepcopy(x_hat_prime_k)
+        P_k_prev = copy.deepcopy(P_prime_k)
         theta_t = time_list[i] - time_list[i-1]
 
         # Predict
@@ -128,17 +132,22 @@ def main():
                         [0,                 0,              theta_t,        0       ],
                         [0,                 0,              0,              theta_t ]])
 
-        acc_x_k_1 = acc_x_list[i-1]
-        acc_y_k_1 = acc_y_list[i-1]
-        u_k = np.array([[acc_x_k_1], [acc_y_k_1], [acc_x_k_1], [acc_y_k_1]])
+        acc_x_k_prev = acc_x_list[i-1]
+        acc_y_k_prev = acc_y_list[i-1]
 
-        x_hat_k = F_k @ x_hat_k_1 + B_k @ u_k
-        P_k = F_k @ P_k_1 @ np.transpose(F_k) + Q_k
+        u_k = np.array([[acc_x_k_prev], [acc_y_k_prev], [acc_x_k_prev], [acc_y_k_prev]])
+
+        x_hat_k = F_k @ x_hat_k_prev + B_k @ u_k
+        P_k = F_k @ P_k_prev @ np.transpose(F_k) + Q_k
 
         # Update
-
         pose_x = pose_x_list[i]
         pose_y = pose_y_list[i]
+
+        if(filter_observation_noise_flag and noise_occurence[i] == 1):
+            pose_x = x_hat_k[0]
+            pose_y = x_hat_k[1]
+
         vel_x = vel_x_list[i]
         vel_y = vel_y_list[i]
         z_k = np.array([[pose_x], [pose_y], [vel_x], [vel_y]])
@@ -150,6 +159,10 @@ def main():
 
         output_pose_x_list.append(x_hat_prime_k[0])
         output_pose_y_list.append(x_hat_prime_k[1])
+
+        print(x_hat_prime_k)
+        exit()
+
 
     plt.plot(pose_x_list, pose_y_list, '-p', markersize=1, linewidth=0.5, label='origin')
     plt.plot(output_pose_x_list, output_pose_y_list, '-p', markersize=1, linewidth=0.5, label='KF')

@@ -1,0 +1,6 @@
+cpp/CMakeFiles
+cpp/CMakeFiles/*
+cpp/*.cmake
+cpp/CMakeCache.txt
+cpp/KalmanFilter
+cpp/Makefile
