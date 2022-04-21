@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.23)
 project(KalmanFilter)
 find_package(Eigen3 QUIET)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(NOT EIGEN3_FOUND)
   # Fallback to cmake_modules

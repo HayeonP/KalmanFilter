@@ -132,10 +132,10 @@ def main():
                         [0,                 0,              theta_t,        0       ],
                         [0,                 0,              0,              theta_t ]])
 
-        acc_x_k_prev = acc_x_list[i-1]
-        acc_y_k_prev = acc_y_list[i-1]
+        acc_x_k = acc_x_list[i-1]
+        acc_y_k = acc_y_list[i-1]
 
-        u_k = np.array([[acc_x_k_prev], [acc_y_k_prev], [acc_x_k_prev], [acc_y_k_prev]])
+        u_k = np.array([[acc_x_k], [acc_y_k], [acc_x_k], [acc_y_k]])
 
         x_hat_k = F_k @ x_hat_k_prev + B_k @ u_k
         P_k = F_k @ P_k_prev @ np.transpose(F_k) + Q_k
@@ -159,10 +159,6 @@ def main():
 
         output_pose_x_list.append(x_hat_prime_k[0])
         output_pose_y_list.append(x_hat_prime_k[1])
-
-        print(x_hat_prime_k)
-        exit()
-
 
     plt.plot(pose_x_list, pose_y_list, '-p', markersize=1, linewidth=0.5, label='origin')
     plt.plot(output_pose_x_list, output_pose_y_list, '-p', markersize=1, linewidth=0.5, label='KF')
