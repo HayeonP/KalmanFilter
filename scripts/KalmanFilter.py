@@ -12,16 +12,6 @@ def create_inputs(data):
 
     return inputs 
 
-def kalman_filter(data):
-    outputs = []
-
-
-    # prediction
-    # mu0 = Hk xk
-    # sigma0 = Hk Pk HTk
-
-    return outputs
-
 def main():
     bag = rosbag.Bag('../files/220203_FMTC_ndt_pose_with_gps_data_red_course.bag')
 
@@ -62,7 +52,7 @@ def main():
 
         noise_occurence.append(0)
 
-        if(ndt_noise_flag and np.random.randrange(1,200) == 1):
+        if(ndt_noise_flag and random.randrange(1,200) == 1):
             noise = np.random.normal(0, 15, 2)
             x = x + noise[0]
             y = y + noise[1]
