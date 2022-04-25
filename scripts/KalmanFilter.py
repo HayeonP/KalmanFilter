@@ -60,8 +60,6 @@ def main():
             pose_list[i][1] = y
             noise_occurence[i] = 1
                 
-
-    
     # Align index of data structures
     pose_x_list = [pose[0] for pose in pose_list]
     pose_x_list = pose_x_list[2:]
