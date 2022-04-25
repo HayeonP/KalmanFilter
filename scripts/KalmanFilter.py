@@ -78,28 +78,22 @@ def main():
     vel_x = vel_x_list[0]
     vel_y = vel_y_list[0]
 
-    x_hat_prime_k = np.array([[pose_x], [pose_y], [vel_x], [vel_y]])
-    P_prime_k = np.identity(4) # Initialize covariance as Identical matrix
+    x_hat_prime_k = np.array([[pose_x], [pose_y]])
+    P_prime_k = np.identity(2) # Initialize covariance as Identical matrix
 
     # Scale Matrix
-    H_k = np.array([[1,      0,      0,      0],
-                    [0,      1,      0,      0],
-                    [0,      0,      1,      0],
-                    [0,      0,      0,      1]])
+    H_k = np.array([[1,      0],
+                    [0,      1]])
 
     # Prediction Noise
     Q_I = 1
-    Q_k = np.array([[Q_I,      0,      0,      0],
-                    [0,      Q_I,      0,      0],
-                    [0,      0,      Q_I,      0],
-                    [0,      0,      0,      Q_I]])
+    Q_k = np.array([[Q_I,      0],
+                    [0,      Q_I]])
     
     # Observation Noise
     R_I = 1
-    R_k = np.array([[R_I,      0,      0,      0],
-                    [0,      R_I,      0,      0],
-                    [0,      0,      R_I,      0],
-                    [0,      0,      0,      R_I]])
+    R_k = np.array([[R_I,      0],
+                    [0,      R_I]])
 
     # Output
     output_pose_x_list = []
@@ -111,21 +105,19 @@ def main():
         theta_t = time_list[i] - time_list[i-1]
 
         # Predict
-        F_k = np.array([[1,     0,      theta_t, 0      ],
-                        [0,     1,      0,      theta_t ],
-                        [0,     0,      1,      0       ],
-                        [0,     0,      0,      1       ]])
+        F_k = np.array([[1,     0],
+                        [0,     1]])
         
-        theta_t_2 = pow(theta_t, 2)
-        B_k = np.array([[0.5*theta_t_2,     0,              0,              0       ],
-                        [0,                 0.5*theta_t_2,  0,              0       ],
-                        [0,                 0,              theta_t,        0       ],
-                        [0,                 0,              0,              theta_t ]])
+        B_k = np.array([[theta_t,       0         ], 
+                        [0,             theta_t   ]])
 
+
+        vel_x_k = vel_x_list[i-1]
+        vel_y_k = vel_y_list[i-1]
         acc_x_k = acc_x_list[i-1]
         acc_y_k = acc_y_list[i-1]
 
-        u_k = np.array([[acc_x_k], [acc_y_k], [acc_x_k], [acc_y_k]])
+        u_k = np.array([[vel_x_k + 0.5 * acc_x_k * theta_t], [vel_y_k + 0.5 * acc_y_k * theta_t]])
 
         x_hat_k = F_k @ x_hat_k_prev + B_k @ u_k
         P_k = F_k @ P_k_prev @ np.transpose(F_k) + Q_k
@@ -138,9 +130,7 @@ def main():
             pose_x = x_hat_k[0]
             pose_y = x_hat_k[1]
 
-        vel_x = vel_x_list[i]
-        vel_y = vel_y_list[i]
-        z_k = np.array([[pose_x], [pose_y], [vel_x], [vel_y]])
+        z_k = np.array([[pose_x], [pose_y]])
 
         K_prime = P_k @ H_k @ np.linalg.pinv(H_k @ P_k @ np.transpose(H_k) + R_k)
 
